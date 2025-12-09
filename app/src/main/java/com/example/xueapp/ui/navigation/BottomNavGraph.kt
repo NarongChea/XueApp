@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.example.xueapp.ui.screen.account.AccountScreen
 import com.example.xueapp.ui.screen.auth.SignIn
 import com.example.xueapp.ui.screen.auth.SignUp
+import com.example.xueapp.ui.screen.auth.VerifyOtpScreen
 import com.example.xueapp.ui.screen.bookmark.BookmarkScreen
 import com.example.xueapp.ui.screen.download.DownloadScreen
 import com.example.xueapp.ui.screen.home.HomeScreen
@@ -25,7 +26,7 @@ import com.example.xueapp.ui.screen.welcome.WelcomeScreen
 fun BottomNavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
-        startDestination = "Welcome"
+        startDestination = "splash" // Always start at the splash screen
     ) {
         composable(route = "welcome") {
             WelcomeScreen (navController)
@@ -58,6 +59,13 @@ fun BottomNavGraph(navController: NavHostController, modifier: Modifier = Modifi
             SignUp(navController)
         }
         composable(
+            route = "verify_otp/{email}",
+            arguments = listOf(navArgument("email") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            VerifyOtpScreen(navController = navController, email = email)
+        }
+        composable(
             route = "story/{storyId}",
             arguments = listOf(navArgument("storyId") { type = NavType.IntType })
         ) { backStackEntry ->
@@ -66,4 +74,3 @@ fun BottomNavGraph(navController: NavHostController, modifier: Modifier = Modifi
         }
     }
 }
-

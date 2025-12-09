@@ -5,7 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,19 +17,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.bottomnavtest.BottomBarScreen
 import com.example.xueapp.R
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    // Delay before going to next screen
+    // Delay for 2 seconds before going to the welcome screen
     LaunchedEffect(Unit) {
         delay(2000)
-        navController.navigate(BottomBarScreen.Home.route)
+        navController.navigate("welcome") {
+            // Clear the splash screen from the back stack
+            popUpTo("splash") { inclusive = true }
+        }
     }
 
-    // Gradient like your old design
     val gradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFFE71616),
