@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -16,23 +17,54 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.bottomnavtest.data.signIn
+import com.example.xueapp.data.TokenManager
+import com.example.xueapp.viewmodel.SignInState
+import com.example.xueapp.viewmodel.SignInViewModel
+import com.example.xueapp.viewmodel.SignInViewModelFactory
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignIn(navController: NavController) {
+    val context = LocalContext.current
+    val signInViewModel: SignInViewModel = viewModel(factory = SignInViewModelFactory(context))
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+
+    val tokenManager = remember { TokenManager(context) }
+
+    val signInState by signInViewModel.signInState.collectAsState()
+
+    var showAlert by remember { mutableStateOf(false) }
+    var alertMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(signInState) {
+        when (val state = signInState) {
+            is SignInState.Success -> {
+                val accessToken = state.authResponse.data?.tokens?.accessToken
+                val refreshToken = state.authResponse.data?.tokens?.refreshToken
+                if (accessToken != null && refreshToken != null) {
+                    tokenManager.saveTokens(accessToken, refreshToken)
+                    navController.navigate("home") { popUpTo(0) }
+                } else {
+                    alertMessage = "Login successful, but tokens were not received."
+                    showAlert = true
+                }
+            }
+            is SignInState.Error -> {
+                alertMessage = state.message
+                showAlert = true
+            }
+            else -> {}
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -69,6 +101,11 @@ fun SignIn(navController: NavController) {
                 label = { Text("Email", color = Color.White) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.Cyan
+                ),
                 textStyle = LocalTextStyle.current.copy(color = Color.White)
             )
 
@@ -78,40 +115,43 @@ fun SignIn(navController: NavController) {
                 label = { Text("Password", color = Color.White) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.Cyan
+                ),
                 textStyle = LocalTextStyle.current.copy(color = Color.White)
             )
 
             // Sign In button
             Button(
                 onClick = {
-                    if (signIn(email, password)) {
-                        navController.navigate("home") {
-                            popUpTo(0)
-                        }
-                    } else {
-                        showError = true
-                        errorMessage = "Invalid email or password"
-                    }
+                    signInViewModel.login(email, password)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
                 shape = RoundedCornerShape(50),
-                modifier = Modifier.fillMaxWidth().height(55.dp)
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                enabled = signInState != SignInState.Loading
             ) {
-                Text("Sign In", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                if (signInState == SignInState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Sign In", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
 
-    if (showError) {
+    if (showAlert) {
         AlertDialog(
-            onDismissRequest = { showError = false },
+            onDismissRequest = { showAlert = false },
             confirmButton = {
-                TextButton(onClick = { showError = false }) {
+                TextButton(onClick = { showAlert = false }) {
                     Text("OK", color = Color.Cyan)
                 }
             },
             title = { Text("Sign In Error", color = Color.White) },
-            text = { Text(errorMessage, color = Color.White) },
+            text = { Text(alertMessage, color = Color.White) },
             containerColor = Color.DarkGray
         )
     }

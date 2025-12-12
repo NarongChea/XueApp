@@ -13,37 +13,77 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bottomnavtest.data.currentUser
 import com.example.xueapp.data.CategoryData
 import com.example.xueapp.data.GuideData
 import com.example.xueapp.data.LibraryData
 import com.example.xueapp.data.SettingList
+import com.example.xueapp.data.TokenManager
+import com.example.xueapp.viewmodel.HomeViewModel
+import com.example.xueapp.viewmodel.HomeViewModelFactory
+import com.example.xueapp.viewmodel.UserState
 
+@Composable
+fun HomeScreen(navController: NavController, modifier: Modifier) {
+    val context = LocalContext.current
+    val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(context))
+    val userState by homeViewModel.userState.collectAsState()
 
-import com.example.xueapp.ui.component.BottomNavBar
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        when (userState) {
+            is UserState.Loading -> {
+                CircularProgressIndicator(color = Color.White)
+            }
+            is UserState.Success -> {
+                val user = (userState as UserState.Success).user
+                HomeScreenContent(navController)
+            }
+            is UserState.Error -> {
+                val message = (userState as UserState.Error).message
+                // Handle error state, maybe show a toast or a dialog
+                // For now, let's just log out the user
+                val tokenManager = TokenManager(context)
+                tokenManager.clearTokens()
+                navController.navigate("login") {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                }
+            }
+        }
+    }
+}
 
 
 @Composable
-fun HomeScreen(navController: NavController,modifier: Modifier) {
+fun HomeScreenContent(navController: NavController) {
 
         Box(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {

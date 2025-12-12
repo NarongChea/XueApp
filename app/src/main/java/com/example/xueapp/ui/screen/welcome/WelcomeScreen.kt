@@ -98,8 +98,13 @@ fun WelcomeScreen(navController: NavController) {
             // Next/Start Button
             Button(
                 onClick = {
-                    if (currentPage < pages.lastIndex) currentPage++
-                    else navController.navigate("splash")
+                    if (currentPage < pages.lastIndex) {
+                        currentPage++
+                    } else {
+                        navController.navigate("login") {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
                 shape = RoundedCornerShape(50),
