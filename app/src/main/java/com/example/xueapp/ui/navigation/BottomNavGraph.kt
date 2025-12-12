@@ -8,6 +8,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.xueapp.ui.screen.GuideScreen.AppGuideScreen
 import com.example.xueapp.ui.screen.account.AccountScreen
 import com.example.xueapp.ui.screen.auth.SignIn
 import com.example.xueapp.ui.screen.auth.SignUp
@@ -57,6 +58,9 @@ fun BottomNavGraph(navController: NavHostController, modifier: Modifier = Modifi
         }
         composable(route = "signup") {
             SignUp(navController)
+        }
+        composable(route = "app_guide_details") {
+            AppGuideScreen(navController)
         }
         composable(
             route = "verify_otp/{email}",
