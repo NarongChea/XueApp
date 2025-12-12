@@ -50,8 +50,6 @@ fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp)
-                .windowInsetsPadding(WindowInsets.statusBars)
                 .align(Alignment.TopCenter),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -79,40 +77,73 @@ fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
         }
 
         // Content
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(top = 100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "Account Information",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Divider(color = Color.Gray, thickness = 1.dp, modifier = Modifier.fillMaxWidth(0.7f))
-
-            // User info
-            Text(
-                text = "Email: ${user?.email ?: "Not logged in"}",
-                color = Color.White,
-                fontSize = 16.sp
-            )
-            user?.let {
-                Text("Lessons Finished: ${it.markAsRead.size}", color = Color.White, fontSize = 16.sp)
-                Text("Bookmarked: ${it.bookmarked.size}", color = Color.White, fontSize = 16.sp)
-                Text("Words Learned: ${it.word}", color = Color.White, fontSize = 16.sp)
-                Text("Characters Learned: ${it.character}", color = Color.White, fontSize = 16.sp)
+        if (user == null) {
+            // No account UI
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No account found",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "You are not signed in yet.",
+                    color = Color.Gray,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { navController.navigate("login") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Cyan),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(55.dp)
+                ) {
+                    Text(
+                        text = "Create or Sign In",
+                        color = Color.Black,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
+        } else {
+            // Logged-in UI
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 100.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Account Information",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Divider(color = Color.Gray, thickness = 1.dp, modifier = Modifier.fillMaxWidth(0.7f))
 
-            // Change password
-            if (user != null) {
+                Text("Email: ${user.email}", color = Color.White, fontSize = 16.sp)
+                Text("Lessons Finished: ${user.markAsRead.size}", color = Color.White, fontSize = 16.sp)
+                Text("Bookmarked: ${user.bookmarked.size}", color = Color.White, fontSize = 16.sp)
+                Text("Words Learned: ${user.word}", color = Color.White, fontSize = 16.sp)
+                Text("Characters Learned: ${user.character}", color = Color.White, fontSize = 16.sp)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Change password section
                 Text(
                     text = "Change Password",
                     color = Color.White,
@@ -163,7 +194,6 @@ fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 showAlert = true
                             }
                             else -> {
-                                // Update user password in allUsers
                                 val index = allUsers.indexOf(user)
                                 if (index != -1) {
                                     val updatedUser = user.copy(password = newPassword)

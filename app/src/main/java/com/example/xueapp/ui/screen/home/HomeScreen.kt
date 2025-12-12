@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.bottomnavtest.data.currentUser
 import com.example.xueapp.data.CategoryData
 import com.example.xueapp.data.GuideData
 import com.example.xueapp.data.LibraryData
@@ -39,6 +41,7 @@ import com.example.xueapp.ui.component.BottomNavBar
 
 @Composable
 fun HomeScreen(navController: NavController,modifier: Modifier) {
+
         Box(
             modifier = modifier
                 .fillMaxSize(),
@@ -110,9 +113,10 @@ fun HomeScreen(navController: NavController,modifier: Modifier) {
 
                 // Progress Row
                 item {
+                    val user = currentUser
+
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -123,18 +127,24 @@ fun HomeScreen(navController: NavController,modifier: Modifier) {
                                 .padding(15.dp)
                         ) {
                             Row(
-                                modifier= Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                CategoryData.categories.forEach { category ->
-                                    ReadingProgress(category.num, category.lesson)
-                                }
+                                // If user is logged in, use real data. Otherwise, show 0.
+                                val wordCount = user?.word ?: 0
+                                val characterCount = user?.character ?: 0
+                                val lessonFinished = user?.markAsRead?.size ?: 0
+
+                                ReadingProgress(num = lessonFinished, lesson = "Lessons")
+                                ReadingProgress(num = wordCount, lesson = "Words")
+                                ReadingProgress(num = characterCount, lesson = "Characters")
                             }
                         }
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
+
                 item{
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -165,17 +175,24 @@ fun HomeScreen(navController: NavController,modifier: Modifier) {
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
-                item(){
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(15.dp)
-                    ){
-                        GuideData.guidelist.forEach {
-                                guide->GuideContent(guide.title,guide.description,guide.color,modifier = Modifier.weight(1f))
+                item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        GuideData.guidelist.forEach { guide ->
+                            ShowGuide(
+                                guide = guide,
+                                onClick = {
+                                    when (guide) {
+                                        GuideData.AppGuide -> navController.navigate("app_guide_details")
+                                        GuideData.LessonGuide -> navController.navigate("lesson_guide_details")
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
-                    Spacer(modifier = Modifier.size(30.dp))
+                    Spacer(modifier = Modifier.height(30.dp))
                 }
+
                 item{
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -189,31 +206,40 @@ fun HomeScreen(navController: NavController,modifier: Modifier) {
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
-                item() {
-                    Column(){
+                item {
+                    Column(modifier = Modifier.fillMaxSize()) {
                         SettingList.settingitems.forEach { item ->
-                            ShowCategory( icon = null,
+                            ShowCategory(
                                 text = item.text,
+                                onClick = {
+                                    when (item) {
+                                        SettingList.Account -> navController.navigate("profile")
+                                        SettingList.Subscription -> navController.navigate("subscription")
+                                        SettingList.Preference -> navController.navigate("preference")
+                                        SettingList.About -> navController.navigate("about")
+                                    }
+                                }
                             )
-                            Spacer(modifier = Modifier.height(5.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
+
             }
         }
     }
 
 
 @Composable
-fun ReadingProgress(num: String, lesson: String) {
+fun ReadingProgress(num: Int, lesson: String) {
     val darkWhite = Color(0xFFEAE9E9)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(6.dp)
     ) {
         Text(
-            text = num,
+            text = num.toString(),
             color = Color.Gray,
             fontWeight = FontWeight.Bold,
             fontSize = 30.sp
@@ -282,26 +308,43 @@ fun ShowCategory(
 
 
 @Composable
-fun GuideContent(title: String, description: String, color: Color, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(2.dp, color, RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.4f))
-            .height(150.dp)
+fun ShowGuide(
+    guide: GuideData,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(2.dp, guide.color, RoundedCornerShape(12.dp))
+            .background(Color(0xFF1C1C1C))
+            .padding(16.dp)
+            .clickable { onClick() } // ✅ clickable per guide
     ) {
-        Column(modifier = Modifier.padding(12.dp)){
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = description,
-                fontSize = 16.sp,
-                color = Color.LightGray
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = guide.title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = guide.description,
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = guide.title,
+                tint = guide.color,
+                modifier = Modifier.size(28.dp)
             )
         }
     }
