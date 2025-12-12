@@ -60,7 +60,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier) {
             }
             is UserState.Success -> {
                 val user = (userState as UserState.Success).user
-                HomeScreenContent(navController, modifier)
+                HomeScreenContent(navController)
             }
             is UserState.Error -> {
                 val message = (userState as UserState.Error).message
@@ -78,9 +78,9 @@ fun HomeScreen(navController: NavController, modifier: Modifier) {
 
 
 @Composable
-fun HomeScreenContent(navController: NavController,modifier: Modifier) {
+fun HomeScreenContent(navController: NavController) {
         Box(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {

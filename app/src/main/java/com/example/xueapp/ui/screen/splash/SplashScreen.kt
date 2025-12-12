@@ -7,27 +7,46 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.xueapp.R
-import kotlinx.coroutines.delay
+import com.example.xueapp.viewmodel.HomeViewModel
+import com.example.xueapp.viewmodel.HomeViewModelFactory
+import com.example.xueapp.viewmodel.UserState
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    // Delay for 2 seconds before going to the welcome screen
-    LaunchedEffect(Unit) {
-        delay(2000)
-        navController.navigate("welcome") {
-            // Clear the splash screen from the back stack
-            popUpTo("splash") { inclusive = true }
+    val context = LocalContext.current
+    val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(context))
+    val userState by homeViewModel.userState.collectAsState()
+
+    LaunchedEffect(userState) {
+        when (userState) {
+            is UserState.Success -> {
+                navController.navigate("home") {
+                    popUpTo("splash") { inclusive = true }
+                }
+            }
+            is UserState.Error -> {
+                navController.navigate("welcome") {
+                    popUpTo("splash") { inclusive = true }
+                }
+            }
+            UserState.Loading -> {
+                // Keep showing splash screen
+            }
         }
     }
 

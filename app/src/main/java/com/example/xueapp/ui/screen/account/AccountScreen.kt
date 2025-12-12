@@ -11,34 +11,45 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.bottomnavtest.data.currentUser
-import com.example.bottomnavtest.data.isLoggedIn
-import com.example.bottomnavtest.data.User
-import com.example.bottomnavtest.data.allUsers
 
 @Composable
-fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun AccountScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    accountViewModel: AccountViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    // TODO: Replace with your actual token retrieval logic
+    val token = "your_auth_token"
 
-    // Observe currentUser so UI updates automatically
-    val userState = remember { mutableStateOf(currentUser) }
-
-    // Whenever currentUser changes, update userState
-    LaunchedEffect(currentUser) {
-        userState.value = currentUser
+    LaunchedEffect(Unit) {
+        accountViewModel.getMe(token)
     }
 
-    var currentPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    val user = accountViewModel.user
+    val logoutState = accountViewModel.logoutState
 
     var showAlert by remember { mutableStateOf(false) }
     var alertMessage by remember { mutableStateOf("") }
 
-    val user: User? = userState.value
+    LaunchedEffect(logoutState) {
+        when (logoutState) {
+            is LogoutState.Success -> {
+                navController.navigate("login") { popUpTo(0) }
+            }
+            is LogoutState.Error -> {
+                alertMessage = logoutState.message
+                showAlert = true
+            }
+            else -> {}
+        }
+    }
 
     Box(
         modifier = modifier
@@ -98,116 +109,26 @@ fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
 
             // User info
             Text(
-                text = "Email: ${user?.email ?: "Not logged in"}",
+                text = "Email: ${user?.email ?: "Loading..."}",
                 color = Color.White,
                 fontSize = 16.sp
             )
-            user?.let {
-                Text("Lessons Finished: ${it.markAsRead.size}", color = Color.White, fontSize = 16.sp)
-                Text("Bookmarked: ${it.bookmarked.size}", color = Color.White, fontSize = 16.sp)
-                Text("Words Learned: ${it.word}", color = Color.White, fontSize = 16.sp)
-                Text("Characters Learned: ${it.character}", color = Color.White, fontSize = 16.sp)
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Change password
-            if (user != null) {
-                Text(
-                    text = "Change Password",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                OutlinedTextField(
-                    value = currentPassword,
-                    onValueChange = { currentPassword = it },
-                    label = { Text("Current Password", color = Color.White) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = LocalTextStyle.current.copy(color = Color.White)
-                )
-
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it },
-                    label = { Text("New Password", color = Color.White) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = LocalTextStyle.current.copy(color = Color.White)
-                )
-
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password", color = Color.White) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = LocalTextStyle.current.copy(color = Color.White)
-                )
-
-                Button(
-                    onClick = {
-                        when {
-                            currentPassword.isBlank() || newPassword.isBlank() || confirmPassword.isBlank() -> {
-                                alertMessage = "Please fill in all password fields."
-                                showAlert = true
-                            }
-                            currentPassword != user.password -> {
-                                alertMessage = "Current password is incorrect."
-                                showAlert = true
-                            }
-                            newPassword != confirmPassword -> {
-                                alertMessage = "New passwords do not match."
-                                showAlert = true
-                            }
-                            else -> {
-                                // Update user password in allUsers
-                                val index = allUsers.indexOf(user)
-                                if (index != -1) {
-                                    val updatedUser = user.copy(password = newPassword)
-                                    allUsers[index] = updatedUser
-                                    currentUser = updatedUser
-                                    userState.value = updatedUser
-                                }
-                                alertMessage = "Password changed successfully!"
-                                showAlert = true
-                                currentPassword = ""
-                                newPassword = ""
-                                confirmPassword = ""
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Cyan),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(55.dp)
-                ) {
-                    Text(
-                        "Update Password",
-                        color = Color.Black,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Sign Out
-                Button(
-                    onClick = {
-                        currentUser = null
-                        isLoggedIn.value = false
-                        navController.navigate("login") { popUpTo(0) }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(55.dp)
-                ) {
+            // Sign Out
+            Button(
+                onClick = { accountViewModel.logout(token) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                shape = RoundedCornerShape(50),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                enabled = logoutState !is LogoutState.Loading
+            ) {
+                if (logoutState is LogoutState.Loading) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
                     Text(
                         text = "Sign Out",
                         color = Color.White,
@@ -227,7 +148,7 @@ fun AccountScreen(navController: NavController, modifier: Modifier = Modifier) {
                         Text("OK", color = Color.Cyan)
                     }
                 },
-                title = { Text("Account", color = Color.White) },
+                title = { Text("Logout Failed", color = Color.White) },
                 text = { Text(alertMessage, color = Color.White) },
                 containerColor = Color.DarkGray
             )
